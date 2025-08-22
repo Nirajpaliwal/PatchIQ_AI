@@ -206,7 +206,7 @@
 
     function payloadFromForm() {
       const fd = new FormData(form);
-      return {
+      const payload = {
         employee_id: fd.get("employee_id"),
         employee_name: fd.get("employee_name"),
         project_code: fd.get("project_code"),
@@ -217,8 +217,13 @@
         end_time: fd.get("end_time"),
         task_description: fd.get("task_description"),
         billable: fd.get("billable"),
-        manager_email: fd.get("manager_email"),
       };
+
+      const manager_email = fd.get("manager_email");
+      if (manager_email && manager_email.trim()) {
+          payload.manager_email = manager_email;
+      }
+      return payload;
     }
 
     form.addEventListener("submit", async (e) => {
@@ -229,7 +234,7 @@
 
       const body = JSON.stringify(payloadFromForm());
       try {
-        const res = await fetch("/api/timesheet/", {
+        const res = await fetch("/timesheet/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
