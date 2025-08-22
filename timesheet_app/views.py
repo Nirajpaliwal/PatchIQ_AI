@@ -21,7 +21,7 @@ class TimesheetEntryView(APIView):
                 raise KeyError("Invalid project code")
 
             task = request.data["task_description"]
-            manager_email = request.data["manager_email"]
+            manager_email = request.data.get("manager_email")
 
             date_str = request.data.get("date")
             work_date = datetime.strptime(date_str, "%Y-%m-%d")
