@@ -13,6 +13,7 @@ import requests
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from git import Repo
+import shutil
 
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langgraph.prebuilt import create_react_agent
@@ -205,9 +206,9 @@ async def run_phase2(analysis: AnalysisResult, relpath: str, file_contents: str,
 
                 logs.append({
                     "timestamp": datetime.now().isoformat(),
-                    "error_file": str(ERROR_LOG_PATH.resolve()),
-                    "fixed_file": str(fixed_path.resolve()),
-                    "diff_file": str(diff_path.resolve()),
+                    "error_file": str(ERROR_LOG_PATH.resolve()).replace("/Users/apple/Desktop/Deloitte Hackathon", ""),
+                    "fixed_file": str(fixed_path.resolve()).replace("/Users/apple/Desktop/Deloitte Hackathon", ""),
+                    "diff_file": str(diff_path.resolve()).replace("/Users/apple/Desktop/Deloitte Hackathon", ""),
                     "branch_name": branch_name,
                     "root_cause": analysis.RootCause,
                     "proposed_fix": analysis.ProposedFixDetails
@@ -268,6 +269,9 @@ async def main():
 
     print(f"\n✅ All outputs saved in: {run_dir.resolve()}")
     print(f"✅ PR URL: {pr_url}")
+
+    shutil.copy2("errors.log", run_dir / "errors.log")
+
     tmpdir.cleanup()
 
 if __name__ == "__main__":

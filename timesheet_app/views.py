@@ -3,6 +3,16 @@ from rest_framework.response import Response
 from rest_framework import status
 from datetime import datetime
 import traceback
+from scripts.lambda_function import run_agent
+import asyncio
+from pathlib import Path
+import json
+from django.http import JsonResponse
+from django.shortcuts import render
+
+
+DATA_FILE = Path("/Users/apple/Desktop/Deloitte Hackathon/run_logs/master_log.json")
+
 
 class TimesheetSPAView(APIView):
     def get(self, request):
@@ -56,8 +66,33 @@ class TimesheetEntryView(APIView):
 
         except Exception:
             # Return stack trace to SPA for demo visibility
-            tb = traceback.format_exc()
+            tb = traceback.format_exc().replace("/Users/apple/Desktop/Deloitte Hackathon", "")
             # Also write it to errors.log so your agent picks it up
             with open("errors.log", "w", encoding="utf-8") as f:
                 f.write(tb)
-            return Response({"status": "error", "trace": tb}, status=400)
+            
+            print("Triggering PatchIQ_AI Agent...")
+            asyncio.run(run_agent())
+
+            return Response({"status": "error", "action": "Triggering PatchIQ_AI Agent", "trace": tb}, status=400)
+
+
+class ErrorLogView(APIView):
+    def get(self, request):
+        if DATA_FILE.exists():
+            data = json.loads(DATA_FILE.read_text())
+        else:
+            data = []
+        return Response(data)
+
+def get_dashboard_data(request):
+    json_file = Path(DATA_FILE)  # path to your JSON file
+    if json_file.exists():
+        with open(json_file, "r") as f:
+            data = json.load(f)
+    else:
+        data = []
+    return JsonResponse(data, safe=False)
+
+def dashboard_ui(request):
+    return render(request, "dashboard.html")  # renders HTML template
