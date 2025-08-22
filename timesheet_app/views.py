@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from datetime import datetime
+from datetime import datetime, timedelta
 import traceback
 
 class TimesheetSPAView(APIView):
@@ -26,11 +26,21 @@ class TimesheetEntryView(APIView):
             date_str = request.data.get("date")
             work_date = datetime.strptime(date_str, "%Y-%m-%d")
 
-            start_time = datetime.strptime(request.data.get("start_time"), "%H:%M")
-            end_time = datetime.strptime(request.data.get("end_time"), "%H:%M")
+            start_time_str = request.data.get("start_time")
+            end_time_str = request.data.get("end_time")
 
-            if end_time < start_time:
-                raise TypeError("End time before start time")
+            # Combine the work_date with the parsed times to get full datetime objects
+            start_datetime = datetime.combine(work_date.date(), datetime.strptime(start_time_str, "%H:%M").time())
+            end_datetime = datetime.combine(work_date.date(), datetime.strptime(end_time_str, "%H:%M").time())
+
+            # If the end time is chronologically earlier than the start time on the same day,
+            # it implies the end time is on the next day. Adjust end_datetime accordingly.
+            if end_datetime < start_datetime:
+                end_datetime += timedelta(days=1)
+
+            # Ensure end time is strictly after start time
+            if end_datetime <= start_datetime:
+                raise TypeError("End time must be after start time")
 
             hours = int(request.data.get("hours_worked"))
 
