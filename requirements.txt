@@ -1,0 +1,15 @@
+Django==4.2.23
+djangorestframework==3.14.0
+requests==2.31.0
+python-dotenv
+streamlit
+langchain
+langchain-mcp-adapters
+openai
+langchain-openai
+langchain-google-genai
+yaspin
+langgraph
+gitpython
+PyGithub
+streamlit

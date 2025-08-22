@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Employee Timesheet – Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg:#0c1222; --surface:#121b2f; --panel:#161f35; --muted:#3a4b6b;
+      --brand:#57c0b9; --brand-2:#82e6d8; --text:#e7eefc; --sub:#a9b6d1; --danger:#ff6b6b;
+      --border:#223050; --input:#0f1830; --ok:#37d399;
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font:14px/1.5 Inter, ui-sans-serif, system-ui, Segoe UI, Roboto, Arial; }
+    .wrap { max-width: 980px; margin: 40px auto; padding: 0 16px; }
+    header { display:flex; align-items:center; justify-content:space-between; margin-bottom: 18px; }
+    h1 { font-size: 20px; margin: 0; letter-spacing:.2px; }
+    .badge { background: linear-gradient(135deg,var(--brand),var(--brand-2)); color:#062b2a; font-weight:700; padding:6px 10px; border-radius:999px; font-size:12px; }
+    .subtle { color: var(--sub); font-size: 13px; margin-top:6px; }
+
+    .shell { display:grid; grid-template-columns: 1.2fr .8fr; gap: 16px; }
+    .card { background: var(--surface); border:1px solid var(--border); border-radius: 14px; }
+    .card .hd { padding: 14px 16px; border-bottom: 1px solid var(--border); display:flex; align-items:center; gap:10px; }
+    .card .hd h3 { margin:0; font-size: 14px; letter-spacing:.2px; }
+    .card .bd { padding: 16px; }
+
+    /* form */
+    form { display:grid; gap: 12px; }
+    .grid { display:grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+    .field { display:flex; flex-direction:column; gap:6px; }
+    label { font-weight:600; font-size:12px; color:#cfe0ff; }
+    input, select, textarea {
+      height: 36px; padding: 8px 10px; border-radius: 10px;
+      background: var(--input); border:1px solid var(--border); color: var(--text); outline: none;
+    }
+    textarea { height: 72px; resize: vertical; }
+    .row { display:flex; gap:10px; align-items:center; }
+    .hint { color: var(--sub); font-size: 11px; }
+
+    button {
+      height: 38px; padding: 0 14px; border-radius: 10px; border: 1px solid transparent;
+      background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: #062b2a; font-weight: 800;
+      cursor: pointer; transition: transform .12s ease, filter .12s ease;
+    }
+    button:hover { transform: translateY(-1px); filter: brightness(1.02); }
+
+    .pill { display:inline-flex; align-items:center; gap:6px; background: #0e1a33; border:1px solid var(--border); color: var(--sub); padding:4px 8px; border-radius:999px; font-size:12px; }
+    .kv { display:grid; grid-template-columns: 110px 1fr; gap: 8px; }
+    pre {
+      background: #0d172e; border:1px solid var(--border); border-radius: 12px; padding: 12px; margin:0; color:#dbe7ff;
+      max-height: 340px; overflow:auto; font-size: 12px; line-height:1.45;
+    }
+    .ok { color: var(--ok); }
+    .err { color: var(--danger); }
+    .tiny { font-size: 11px; color: var(--sub); }
+    .tag { display:inline-block; padding:2px 6px; border-radius: 6px; background:#132243; border:1px solid var(--border); color:#aecdff; font-size:11px; }
+
+    @media (max-width: 860px) {
+      .shell { grid-template-columns: 1fr; }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Employee Timesheet</h1>
+        <div class="subtle">Single-page demo. Certain inputs intentionally cause real exceptions to showcase the auto-fix agent.</div>
+      </div>
+      <span class="badge">Hackathon Demo</span>
+    </header>
+
+    <div class="shell">
+      <!-- Left: Form -->
+      <div class="card">
+        <div class="hd">
+          <h3>Submit Timesheet</h3>
+          <span class="pill">DRF endpoint: <code class="tiny">POST /api/timesheet/</code></span>
+        </div>
+        <div class="bd">
+          <form id="tsForm" autocomplete="off" novalidate>
+            <div class="grid">
+              <div class="field">
+                <label>Employee ID</label>
+                <input name="employee_id" placeholder="e.g. 10234" />
+              </div>
+
+              <div class="field">
+                <label>Employee Name</label>
+                <input name="employee_name" placeholder="e.g. Priya Sharma" />
+              </div>
+
+              <div class="field">
+                <label>Project Code</label>
+                <select name="project_code">
+                  <option value="">Choose…</option>
+                  <option value="P101">P101 — Client Audit</option>
+                  <option value="P202">P202 — Internal Tooling</option>
+                  <option value="DELOITTE-TEST">DELOITTE-TEST (invalid)</option>
+                </select>
+                <div class="hint">Choosing <b>DELOITTE-TEST</b> can trigger backend KeyError.</div>
+              </div>
+
+              <div class="field">
+                <label>Department</label>
+                <select name="department">
+                  <option value="">Choose…</option>
+                  <option value="HR">HR</option>
+                  <option value="IT">IT</option>
+                  <option value="Finance">Finance</option>
+                  <option value="Unknown">Unknown (invalid)</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label>Date</label>
+                <input type="date" name="date" />
+              </div>
+
+              <div class="field">
+                <label>Hours Worked</label>
+                <input name="hours_worked" placeholder="e.g. 8" />
+                <div class="hint">Non-numeric like <i>5.5h</i> can cause ValueError (int conversion).</div>
+              </div>
+
+              <div class="field">
+                <label>Start Time</label>
+                <input type="time" name="start_time" />
+              </div>
+
+              <div class="field">
+                <label>End Time</label>
+                <input type="time" name="end_time" />
+              </div>
+
+              <div class="field" style="grid-column:1/-1;">
+                <label>Task Description</label>
+                <textarea name="task_description" placeholder="e.g. Month-end reconciliation, report automation…"></textarea>
+              </div>
+
+              <div class="field">
+                <label>Billable</label>
+                <select name="billable">
+                  <option value="">Choose…</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                  <option value="Maybe">Maybe (invalid)</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label>Manager Email</label>
+                <input type="email" name="manager_email" placeholder="e.g. priya@company.com" />
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:6px;">
+              <button type="submit">Submit Timesheet</button>
+              <span class="tiny">Tip: Try invalid combos (e.g., “Unknown” dept, “DELOITTE-TEST”, or non-numeric hours).</span>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Right: Response / Trace -->
+      <div class="card">
+        <div class="hd">
+          <h3>Server Response</h3>
+        </div>
+        <div class="bd">
+          <div class="kv" style="margin-bottom:8px;">
+            <div>Status</div>
+            <div id="status"><span class="tag">waiting</span></div>
+            <div>Endpoint</div>
+            <div><code class="tiny">/api/timesheet/</code></div>
+          </div>
+          <pre id="resp">—</pre>
+
+          <div class="hd" style="margin:14px -16px 8px; border-top:1px solid var(--border); border-bottom:none;">
+            <h3>Last Stack Trace</h3>
+          </div>
+          <pre id="trace">—</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // CSRF helper (if using SessionAuth + CSRF; safe to ignore if tokenless)
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    const form = document.getElementById("tsForm");
+    const statusEl = document.getElementById("status");
+    const respEl = document.getElementById("resp");
+    const traceEl = document.getElementById("trace");
+
+    function setStatus(text, ok=false) {
+      statusEl.innerHTML = `<span class="tag" style="${ok ? 'color:#0bd47d;border-color:#0bd47d;background:#0c2b25' : ''}">${text}</span>`;
+    }
+
+    function payloadFromForm() {
+      const fd = new FormData(form);
+      return {
+        employee_id: fd.get("employee_id"),
+        employee_name: fd.get("employee_name"),
+        project_code: fd.get("project_code"),
+        department: fd.get("department"),
+        date: fd.get("date"),
+        hours_worked: fd.get("hours_worked"),
+        start_time: fd.get("start_time"),
+        end_time: fd.get("end_time"),
+        task_description: fd.get("task_description"),
+        billable: fd.get("billable"),
+        manager_email: fd.get("manager_email"),
+      };
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      setStatus("submitting…");
+      respEl.textContent = "—";
+      traceEl.textContent = "—";
+
+      const body = JSON.stringify(payloadFromForm());
+      try {
+        const res = await fetch("/api/timesheet/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(csrftoken ? {"X-CSRFToken": csrftoken} : {})
+          },
+          body
+        });
+        const json = await res.json();
+        respEl.textContent = JSON.stringify(json, null, 2);
+        if (json.trace) {
+          setStatus("error", false);
+          traceEl.textContent = json.trace;
+        } else {
+          setStatus("ok", true);
+          traceEl.textContent = "—";
+        }
+      } catch (err) {
+        setStatus("network error", false);
+        respEl.textContent = "Request failed: " + err.message;
+      }
+    });
+  </script>
+</body>
+</html>
