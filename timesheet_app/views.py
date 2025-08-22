@@ -13,7 +13,10 @@ class TimesheetSPAView(APIView):
 class TimesheetEntryView(APIView):
     def post(self, request):
         try:
-            emp_id = int(request.data.get("employee_id"))
+            employee_id_input = request.data.get("employee_id")
+            if not (isinstance(employee_id_input, int) or (isinstance(employee_id_input, str) and employee_id_input.isdigit())):
+                raise ValueError("Employee ID must be an integer or a numeric string.")
+            emp_id = int(employee_id_input)
             emp_name = request.data["employee_name"]
             project_code = request.data.get("project_code")
 
