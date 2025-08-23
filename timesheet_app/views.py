@@ -53,7 +53,7 @@ class TimesheetEntryView(APIView):
                 raise ValueError("Billable must be Yes or No")
 
             dept_codes = {"HR": 1, "IT": 2, "Finance": 3}
-            dept_id = dept_codes[request.data.get("department")]
+            dept_id = dept_codes.get(request.data.get("department"), 0)
 
             # success shape
             return Response({
