@@ -13,6 +13,11 @@ from django.shortcuts import render
 
 DATA_FILE = Path("/Users/apple/Desktop/Deloitte Hackathon/run_logs/master_log.json")
 
+PROJECT_DETAILS = {
+    "P101": "Project Alpha",
+    "P202": "Project Beta",
+}
+
 
 class TimesheetSPAView(APIView):
     def get(self, request):
@@ -25,10 +30,9 @@ class TimesheetEntryView(APIView):
         try:
             emp_id = int(request.data.get("employee_id"))
             emp_name = request.data["employee_name"]
-            project_code = request.data.get("project_code")
 
-            if project_code not in ["P101", "P202"]:
-                raise KeyError("Invalid project code")
+            project_code = request.data.get("project_code")
+            project_name = PROJECT_DETAILS[project_code]
 
             task = request.data["task_description"]
             manager_email = request.data["manager_email"]
