@@ -20,6 +20,8 @@ from langgraph.prebuilt import create_react_agent
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from langchain_google_genai import ChatGoogleGenerativeAI
+from zoneinfo import ZoneInfo
+from .email_service import send_email
 
 # ----------------- CONFIG -----------------
 load_dotenv()
@@ -31,6 +33,10 @@ THREAD_ID       = "session"
 RECURSION_LIMIT = 15
 LLM_MODEL       = "gemini-2.5-flash"
 MAX_RETRIES     = 3
+TO_EMAIL        = "niraj30paliwal@gmail.com"
+EMAIL_SUBJECT   = "PatchIQ.AI - Error Fix Report"
+
+
 
 if not REPO_URL or not GITHUB_PAT:
     raise RuntimeError("Please set REPO_URL and GITHUB_PAT in .env")
@@ -189,7 +195,7 @@ async def run_phase2(analysis: AnalysisResult, relpath: str, file_contents: str,
                 repo_file_path.write_text(fix.FixedCode, encoding="utf-8")
 
                 repo = Repo(repo_dir)
-                branch_name = f"fix/{Path(relpath).stem}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                branch_name = f"fix/{Path(relpath).stem}_{datetime.now(ZoneInfo("Asia/Kolkata")).strftime('%Y%m%d_%H%M%S')}"
                 repo.git.checkout('-b', branch_name)
                 repo.index.add([str(repo_file_path)])
                 repo.index.commit(f"fix: {analysis.RootCause}\n\ndetails: {analysis.ProposedFixDetails}")
@@ -205,11 +211,13 @@ async def run_phase2(analysis: AnalysisResult, relpath: str, file_contents: str,
                     logs = []
 
                 logs.append({
-                    "timestamp": datetime.now().isoformat(),
-                    "error_file": str(ERROR_LOG_PATH.resolve()).replace("/Users/apple/Desktop/Deloitte Hackathon", ""),
-                    "fixed_file": str(fixed_path.resolve()).replace("/Users/apple/Desktop/Deloitte Hackathon", ""),
-                    "diff_file": str(diff_path.resolve()).replace("/Users/apple/Desktop/Deloitte Hackathon", ""),
+                    "timestamp": datetime.now(ZoneInfo("Asia/Kolkata")).strftime('%Y-%m-%d %H:%M:%S'), # datetime.now().isoformat(),
                     "branch_name": branch_name,
+                    "error_file": analysis.GithubFilePathHavingError,
+                    "trace" : f"{ERROR_LOG_PATH.read_text(errors="ignore").strip()}",
+                    # "error_file": str(ERROR_LOG_PATH.resolve()).replace("/Users/apple/Desktop/Deloitte Hackathon", ""),
+                    # "fixed_file": str(fixed_path.resolve()).replace("/Users/apple/Desktop/Deloitte Hackathon", ""),
+                    # "diff_file": str(diff_path.resolve()).replace("/Users/apple/Desktop/Deloitte Hackathon", ""),
                     "root_cause": analysis.RootCause,
                     "proposed_fix": analysis.ProposedFixDetails
                 })
@@ -237,7 +245,7 @@ def create_pr(branch_name: str, analysis: AnalysisResult, run_dir: Path):
     if response.status_code not in [200,201]:
         raise RuntimeError(f"Failed to create PR: {response.status_code}, {response.text}")
     pr_url = response.json().get("html_url")
-    print(f"✅ PR created: {pr_url}")
+    # print(f"✅ PR created: {pr_url}")
 
     # Update master log with PR URL
     master_log_file = run_dir.parent / "master_log.json"
@@ -248,29 +256,38 @@ def create_pr(branch_name: str, analysis: AnalysisResult, run_dir: Path):
 
 # ----------------- Main Runner -----------------
 async def main():
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    run_dir = Path("run_logs") / timestamp
+    timestamp = datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%Y-%m-%d_%H-%M-%S")
+    run_dir = Path("agent_logs") / timestamp
     run_dir.mkdir(parents=True, exist_ok=True)
 
     # Clone repo
     tmpdir = tempfile.TemporaryDirectory()
     repo_dir = Path(tmpdir.name)
-    print("Cloning repo to", repo_dir)
+    print("Cloning repo to: ", repo_dir)
     Repo.clone_from(repo_url_with_token, repo_dir, branch="main", depth=1)
 
     # Phase 1
+    print("Running Phase 1...")
     analysis, relpath, file_contents = await run_phase1(repo_dir, run_dir)
+    print("Phase 1 Completed.")
 
     # Phase 2
+    print("Running Phase 2...")
     fix, branch_name = await run_phase2(analysis, relpath, file_contents, run_dir, repo_dir)
+    print("Phase 2 Completed.")
 
     # Phase 3
+    print("Creating Pull Request...")
     pr_url = create_pr(branch_name, analysis, run_dir)
+    print("Pull Request Created.")
 
     print(f"\n✅ All outputs saved in: {run_dir.resolve()}")
     print(f"✅ PR URL: {pr_url}")
 
     shutil.copy2("errors.log", run_dir / "errors.log")
+
+    send_email(TO_EMAIL, EMAIL_SUBJECT)
+
 
     tmpdir.cleanup()
 
