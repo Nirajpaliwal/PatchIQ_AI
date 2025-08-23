@@ -37,11 +37,11 @@ class TimesheetEntryView(APIView):
             task = request.data["task_description"]
             manager_email = request.data["manager_email"]
 
-            date_str = request.data.get("date")
+            date_str = request.data.get("date") or ""
             work_date = datetime.strptime(date_str, "%Y-%m-%d")
 
-            start_time = datetime.strptime(request.data.get("start_time"), "%H:%M")
-            end_time = datetime.strptime(request.data.get("end_time"), "%H:%M")
+            start_time = datetime.strptime(request.data.get("start_time") or "", "%H:%M")
+            end_time = datetime.strptime(request.data.get("end_time") or "", "%H:%M")
 
             if end_time < start_time:
                 raise TypeError("End time before start time")
