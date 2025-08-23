@@ -40,7 +40,7 @@ class TimesheetEntryView(APIView):
             date_str = request.data.get("date")
             work_date = datetime.strptime(date_str, "%Y-%m-%d")
 
-            start_time = datetime.strptime(request.data.get("start_time"), "%H:%M")
+            start_time = datetime.strptime(request.data.get("start_time") or "", "%H:%M")
             end_time = datetime.strptime(request.data.get("end_time"), "%H:%M")
 
             if end_time < start_time:
