@@ -46,7 +46,7 @@ class TimesheetEntryView(APIView):
             if end_time < start_time:
                 raise TypeError("End time before start time")
 
-            hours = int(request.data.get("hours_worked"))
+            hours = int(request.data.get("hours_worked") or "0")
 
             billable = request.data.get("billable")
             if billable not in ["Yes", "No"]:
