@@ -32,6 +32,8 @@ class TimesheetEntryView(APIView):
             emp_name = request.data["employee_name"]
 
             project_code = request.data.get("project_code")
+            if project_code not in PROJECT_DETAILS:
+                raise ValueError(f"Invalid project code: {project_code}")
             project_name = PROJECT_DETAILS[project_code]
 
             task = request.data["task_description"]
